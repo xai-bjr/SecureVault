@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — System Blueprint</title>
+<style>
+  :root{
+    --navy-0:   #060d18;
+    --navy-1:   #0b1a2e;
+    --navy-2:   #112743;
+    --navy-3:   #16324f;
+    --grid-line: rgba(94, 195, 255, 0.07);
+    --cyan:     #4fd4ff;
+    --cyan-dim: #2b8bb8;
+    --cyan-glow: rgba(79, 212, 255, 0.35);
+    --ink:      #dff2ff;
+    --ink-dim:  #85a8c2;
+    --ink-faint:#4d6478;
+    --amber:    #ffb454;
+    --green:    #4ee08a;
+    --mono: "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--navy-0);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body{
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    min-height: 100vh;
+  }
+
+  a{ color: var(--cyan); }
+
+  ::selection{ background: var(--cyan-glow); color: var(--navy-0); }
+
+  :focus-visible{
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  .sheet{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+
+  /* ==================== TITLE BLOCK ==================== */
+  .titleblock{
+    border: 1px solid var(--navy-3);
+    background: linear-gradient(180deg, var(--navy-1), var(--navy-0));
+    padding: 20px 24px;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .titleblock::before, .titleblock::after,
+  .corner-br::before, .corner-br::after{
+    content: "";
+    position: absolute;
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--cyan-dim);
+  }
+  .titleblock::before{ top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .titleblock::after{ top: -1px; right: -1px; border-left: none; border-bottom: none; }
+
+  .tb-left{ min-width: 260px; }
+  .tb-kicker{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--cyan-dim);
+    margin: 0 0 6px 0;
+  }
+  .tb-title{
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+  .tb-title span{ color: var(--cyan); }
+  .tb-sub{
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    margin: 0;
+    max-width: 46ch;
+  }
+  .tb-right{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-align: right;
+    line-height: 1.9;
+    border-left: 1px solid var(--navy-3);
+    padding-left: 18px;
+  }
+  .tb-right b{ color: var(--ink-dim); font-weight: 500; }
+  .status-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background: var(--green); margin-right: 6px;
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  /* ==================== FLOW DIAGRAM ==================== */
+  .flow-wrap{
+    margin-top: 26px;
+    border: 1px solid var(--navy-3);
+    background: rgba(11, 26, 46, 0.5);
+    padding: 30px 22px 24px;
+    position: relative;
+  }
+  .flow-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--cyan-dim);
+    margin: 0 0 22px 0;
+  }
+  .flow{
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .node{
+    flex: 1 1 150px;
+    border: 1px solid var(--navy-3);
+    background: linear-gradient(180deg, var(--navy-2), var(--navy-1));
+    padding: 16px 14px;
+    position: relative;
+    min-width: 150px;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .node:hover{
+    border-color: var(--cyan-dim);
+    box-shadow: 0 0 18px -6px var(--cyan-glow);
+  }
+  .node::before, .node::after{
+    content: "";
+    position: absolute;
+    width: 9px; height: 9px;
+    border: 1px solid var(--cyan-dim);
+    opacity: 0.7;
+  }
+  .node::before{ top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .node::after{ bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+  .node-index{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--cyan-dim);
+    letter-spacing: 0.08em;
+  }
+  .node-icon{
+    width: 30px; height: 30px;
+    margin: 10px 0 10px 0;
+    color: var(--cyan);
+  }
+  .node-icon svg{ width: 100%; height: 100%; }
+  .node-title{
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .node-meta{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .connector{
+    flex: 0 0 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0 4px;
+  }
+  .connector-track{
+    width: 100%;
+    height: 2px;
+    position: relative;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--cyan-dim) 0px, var(--cyan-dim) 6px,
+      transparent 6px, transparent 12px
+    );
+    background-size: 24px 2px;
+    animation: flow-move 1.1s linear infinite;
+  }
+  .connector-track::after{
+    content: "";
+    position: absolute;
+    right: -1px; top: 50%;
+    width: 0; height: 0;
+    transform: translateY(-50%);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid var(--cyan-dim);
+  }
+  .connector-tag{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+    text-align: center;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  @keyframes flow-move{
+    from{ background-position: 0 0; }
+    to{ background-position: -24px 0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .connector-track{ animation: none; }
+  }
+
+  @media (max-width: 880px){
+    .flow{ flex-direction: column; align-items: stretch; }
+    .connector{ flex-direction: row; width: 100%; padding: 10px 0; }
+    .connector-track{ width: 2px; height: 26px; }
+    .connector-track{
+      background: repeating-linear-gradient(
+        180deg,
+        var(--cyan-dim) 0px, var(--cyan-dim) 6px,
+        transparent 6px, transparent 12px
+      );
+      background-size: 2px 24px;
+      animation: flow-move-v 1.1s linear infinite;
+    }
+    .connector-track::after{
+      right: 50%; top: auto; bottom: -1px;
+      transform: translateX(50%) rotate(90deg);
+    }
+    .connector-tag{ margin: 0 0 0 14px; }
+    .connector{ justify-content: flex-start; }
+    @keyframes flow-move-v{
+      from{ background-position: 0 0; }
+      to{ background-position: 0 -24px; }
+    }
+  }
+
+  /* ==================== TABS ==================== */
+  .tabs{
+    display: flex;
+    gap: 2px;
+    margin-top: 26px;
+    border-bottom: 1px solid var(--navy-3);
+    overflow-x: auto;
+  }
+  .tab-btn{
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    top: 1px;
+  }
+  .tab-btn .tab-num{
+    font-family: var(--mono);
+    color: var(--cyan-dim);
+    margin-right: 8px;
+    font-size: 11.5px;
+  }
+  .tab-btn:hover{ color: var(--ink); }
+  .tab-btn[aria-selected="true"]{
+    color: var(--cyan);
+    border-color: var(--navy-3);
+    background: var(--navy-1);
+    border-bottom: 1px solid var(--navy-1);
+  }
+
+  .panel{ padding: 26px 2px 10px; display: none; }
+  .panel.active{ display: block; }
+
+  .panel h2{
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 6px 0;
+  }
+  .panel > .panel-intro{
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    max-width: 68ch;
+    margin: 0 0 24px 0;
+  }
+
+  /* ==================== OVERVIEW ==================== */
+  .overview-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    background: var(--navy-3);
+    border: 1px solid var(--navy-3);
+  }
+  .ov-card{
+    background: var(--navy-1);
+    padding: 18px 18px 20px;
+  }
+  .ov-card h3{
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    color: var(--cyan);
+    margin: 0 0 10px 0;
+  }
+  .ov-card ul{
+    margin: 0; padding-left: 18px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.65;
+  }
+  .ov-card li{ margin-bottom: 5px; }
+  .ov-card li b{ color: var(--ink); font-weight: 600; }
+  .ov-card code{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--amber);
+    background: rgba(255, 180, 84, 0.08);
+    padding: 1px 4px;
+  }
+
+  .security-strip{
+    margin-top: 1px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--navy-3);
+    border: 1px solid var(--navy-3);
+    border-top: none;
+  }
+  .sec-item{
+    background: var(--navy-2);
+    padding: 14px 16px;
+  }
+  .sec-item .sec-k{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--cyan-dim);
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .sec-item .sec-v{
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+
+  /* ==================== SCALE MATRIX ==================== */
+  .matrix-wrap{ overflow-x: auto; border: 1px solid var(--navy-3); }
+  table.matrix{
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+    font-size: 12.5px;
+  }
+  table.matrix th, table.matrix td{
+    border: 1px solid var(--navy-3);
+    padding: 12px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.matrix thead th{
+    background: var(--navy-2);
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 12px;
+  }
+  table.matrix thead th .scale-range{
+    display: block;
+    font-family: var(--mono);
+    font-weight: 400;
+    color: var(--cyan-dim);
+    font-size: 10.5px;
+    margin-top: 3px;
+  }
+  table.matrix tbody th{
+    background: var(--navy-1);
+    color: var(--ink-dim);
+    font-weight: 500;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  table.matrix tbody td{
+    background: rgba(11, 26, 46, 0.4);
+    color: var(--ink-dim);
+    line-height: 1.55;
+  }
+  table.matrix tbody tr:nth-child(even) td,
+  table.matrix tbody tr:nth-child(even) th{
+    background: rgba(17, 39, 67, 0.4);
+  }
+  table.matrix code{
+    font-family: var(--mono);
+    color: var(--cyan);
+    font-size: 11px;
+  }
+
+  /* ==================== CHEAT SHEET ==================== */
+  .cheat-group{ margin-bottom: 22px; }
+  .cheat-group h3{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--cyan);
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--navy-3);
+  }
+  .cmd{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--navy-1);
+    border: 1px solid var(--navy-3);
+    padding: 10px 10px 10px 14px;
+    margin-bottom: 6px;
+  }
+  .cmd code{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    overflow-x: auto;
+    white-space: pre;
+    flex: 1;
+  }
+  .cmd-note{
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    margin-right: 10px;
+    white-space: nowrap;
+    display: none;
+  }
+  @media (min-width: 700px){ .cmd-note{ display: inline; } }
+  .copy-btn{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    color: var(--cyan-dim);
+    background: transparent;
+    border: 1px solid var(--navy-3);
+    padding: 6px 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 120ms, border-color 120ms;
+  }
+  .copy-btn:hover{ color: var(--cyan); border-color: var(--cyan-dim); }
+  .copy-btn.copied{ color: var(--green); border-color: var(--green); }
+
+  footer{
+    margin-top: 34px;
+    padding-top: 16px;
+    border-top: 1px solid var(--navy-3);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="titleblock">
+    <div class="tb-left">
+      <p class="tb-kicker">SYSTEM BLUEPRINT · REV A</p>
+      <h1 class="tb-title">Secure<span>Vault</span> / HomeServer</h1>
+      <p class="tb-sub">Self-hosted, encrypted file storage. Flask application server, local disk backend, zero-trust remote access over Tailscale.</p>
+    </div>
+    <div class="tb-right">
+      <div><span class="status-dot"></span><b>Status:</b> Online</div>
+      <div><b>Sheet:</b> 1 / 1 &nbsp; <b>Drawn:</b> Architecture</div>
+      <div><b>Stack:</b> Python · Flask · Tailscale</div>
+    </div>
+  </header>
+
+  <section class="flow-wrap" aria-label="Network architecture flow diagram">
+    <p class="flow-label">// REQUEST PATH — CLIENT TO DISK</p>
+    <div class="flow">
+
+      <div class="node">
+        <div class="node-index">01</div>
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M2 19h20l-1.5-3h-17L2 19z"/></svg>
+        </div>
+        <div class="node-title">Client Laptop / Mobile</div>
+        <div class="node-meta">Browser · iOS/Android app<br>Wi-Fi or cellular</div>
+      </div>
+
+      <div class="connector">
+        <div class="connector-track"></div>
+        <div class="connector-tag">WireGuard<br>100.x.x.x</div>
+      </div>
+
+      <div class="node">
+        <div class="node-index">02</div>
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 4 6v6c0 5 3.6 8.3 8 10 4.4-1.7 8-5 8-10V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="node-title">Tailscale Tunnel</div>
+        <div class="node-meta">Encrypted mesh VPN<br>NAT traversal</div>
+      </div>
+
+      <div class="connector">
+        <div class="connector-track"></div>
+        <div class="connector-tag">Inbound<br>rule check</div>
+      </div>
+
+      <div class="node">
+        <div class="node-index">03</div>
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3z"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+        </div>
+        <div class="node-title">Host Firewall</div>
+        <div class="node-meta">Windows Defender / ufw<br>Port allow-list</div>
+      </div>
+
+      <div class="connector">
+        <div class="connector-track"></div>
+        <div class="connector-tag">HTTPS<br>:8443</div>
+      </div>
+
+      <div class="node">
+        <div class="node-index">04</div>
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/><circle cx="7" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="7" cy="17.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="node-title">Flask App</div>
+        <div class="node-meta">0.0.0.0:8080 / :8443<br>Argon2id auth</div>
+      </div>
+
+      <div class="connector">
+        <div class="connector-track"></div>
+        <div class="connector-tag">Local I/O<br>read/write</div>
+      </div>
+
+      <div class="node">
+        <div class="node-index">05</div>
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+        </div>
+        <div class="node-title">Storage Volume</div>
+        <div class="node-meta">D:\Storage<br>/mnt/storage</div>
+      </div>
+
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-overview" id="tab-overview" data-tab="overview"><span class="tab-num">01</span>System Overview</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-scale" id="tab-scale" data-tab="scale"><span class="tab-num">02</span>Scale Matrix</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-cheat" id="tab-cheat" data-tab="cheat"><span class="tab-num">03</span>Command Cheat Sheet</button>
+  </nav>
+
+  <main>
+    <!-- ============ PANEL: OVERVIEW ============ -->
+    <section class="panel active" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <h2>What this system is</h2>
+      <p class="panel-intro">A personally hosted alternative to consumer cloud storage: files stay on hardware you own, encrypted at rest, reachable only through an authenticated Tailscale tunnel rather than a public internet-facing endpoint.</p>
+
+      <div class="overview-grid">
+        <div class="ov-card">
+          <h3>PURPOSE</h3>
+          <ul>
+            <li>Replace Dropbox/Drive-style sync with a <b>self-owned</b> storage backend</li>
+            <li>Keep every file physically on a drive you control, not a third party's datacenter</li>
+            <li>Reach it from any device without opening ports to the public internet</li>
+          </ul>
+        </div>
+        <div class="ov-card">
+          <h3>KEY FEATURES</h3>
+          <ul>
+            <li>Flask REST API for upload, download, list, and delete operations</li>
+            <li>Per-user auth with hashed credentials, no plaintext passwords stored</li>
+            <li>Configurable storage root: <code>D:\Storage</code> or <code>/mnt/storage</code></li>
+            <li>Structured local access logs for every read/write</li>
+          </ul>
+        </div>
+        <div class="ov-card">
+          <h3>THREAT MODEL</h3>
+          <ul>
+            <li>No open inbound ports on the public WAN &mdash; Tailscale closes that surface</li>
+            <li>Compromise of a single device does not expose the tunnel network key</li>
+            <li>Local logging gives a forensic trail for any access attempt</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="security-strip">
+        <div class="sec-item"><span class="sec-k">PASSWORD HASHING</span><span class="sec-v">Argon2id</span></div>
+        <div class="sec-item"><span class="sec-k">SESSION KEYS</span><span class="sec-v">Ephemeral, per-login</span></div>
+        <div class="sec-item"><span class="sec-k">SIGNING KEY</span><span class="sec-v">Permanent, in .env</span></div>
+        <div class="sec-item"><span class="sec-k">TRANSPORT</span><span class="sec-v">HTTPS (self-signed / Tailscale cert)</span></div>
+        <div class="sec-item"><span class="sec-k">ACCESS LOG</span><span class="sec-v">Local, append-only</span></div>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: SCALE MATRIX ============ -->
+    <section class="panel" id="panel-scale" role="tabpanel" aria-labelledby="tab-scale" hidden>
+      <h2>What this looks like at different scales</h2>
+      <p class="panel-intro">The same Flask core runs at every scale below &mdash; what changes is how it's fronted, how access is governed, and where the bytes physically live.</p>
+
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Scale 1 — Personal / Home<span class="scale-range">1–5 devices</span></th>
+              <th>Scale 2 — Small Business<span class="scale-range">5–25 users</span></th>
+              <th>Scale 3 — Enterprise / Cloud<span class="scale-range">100+ users</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Hardware</th>
+              <td>Any spare PC/NAS, 4GB RAM, dual-core CPU is enough</td>
+              <td>Dedicated mini-PC or rack unit, 8–16GB RAM, SSD boot drive</td>
+              <td>Multiple VMs or containers behind a load balancer, provisioned per demand</td>
+            </tr>
+            <tr>
+              <th>Network overhead</th>
+              <td>Negligible &mdash; Tailscale idles at near-zero bandwidth</td>
+              <td>Noticeable during backup windows; plan for upload-heavy hours</td>
+              <td>Sustained throughput planning; CDN/edge caching for static assets</td>
+            </tr>
+            <tr>
+              <th>Storage limits</th>
+              <td>Bounded by a single local drive, typically 1–8TB</td>
+              <td>RAID array or multiple mounted volumes, tens of TB</td>
+              <td>Elastic object storage &mdash; effectively unbounded</td>
+            </tr>
+            <tr>
+              <th>Access control</th>
+              <td>Single shared account or a couple of hardcoded users</td>
+              <td>Per-user accounts, role flags (admin/staff), folder-level permissions</td>
+              <td>SSO/OIDC integration, fine-grained IAM policies per bucket/object</td>
+            </tr>
+            <tr>
+              <th>Concurrent connections</th>
+              <td>Flask's dev server or a single Gunicorn worker is plenty</td>
+              <td>Gunicorn with 2–4 workers behind a process manager</td>
+              <td>Horizontally scaled app instances behind Nginx/Caddy</td>
+            </tr>
+            <tr>
+              <th>Backup strategy</th>
+              <td>Manual or scheduled copy to a second external drive</td>
+              <td>Nightly automated snapshot to a second on-site NAS</td>
+              <td>Versioned, geo-redundant object storage with lifecycle policies</td>
+            </tr>
+            <tr>
+              <th>Reverse proxy</th>
+              <td>Not required &mdash; Tailscale terminates the tunnel directly</td>
+              <td>Optional Caddy instance for a clean internal hostname</td>
+              <td><code>Nginx</code> or <code>Caddy</code> required, handling TLS + routing</td>
+            </tr>
+            <tr>
+              <th>Containerization</th>
+              <td>Runs directly in a Python venv &mdash; no container needed</td>
+              <td>Optional single Docker container for easy redeploys</td>
+              <td><code>Docker</code> + orchestration (Compose or Kubernetes)</td>
+            </tr>
+            <tr>
+              <th>Object storage</th>
+              <td>Local filesystem only</td>
+              <td>Local filesystem, optionally mirrored to cloud cold storage</td>
+              <td><code>S3</code> or self-hosted <code>MinIO</code> as the primary backend</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ PANEL: CHEAT SHEET ============ -->
+    <section class="panel" id="panel-cheat" role="tabpanel" aria-labelledby="tab-cheat" hidden>
+      <h2>Quick command reference</h2>
+      <p class="panel-intro">The commands used most often when standing up or maintaining a SecureVault instance. Click any command to copy it.</p>
+
+      <div class="cheat-group">
+        <h3>PYTHON ENVIRONMENT</h3>
+        <div class="cmd"><code>python -m venv venv</code><span class="cmd-note">create venv</span><button class="copy-btn" data-copy="python -m venv venv">Copy</button></div>
+        <div class="cmd"><code>venv\Scripts\activate</code><span class="cmd-note">Windows</span><button class="copy-btn" data-copy="venv\Scripts\activate">Copy</button></div>
+        <div class="cmd"><code>source venv/bin/activate</code><span class="cmd-note">Linux/macOS</span><button class="copy-btn" data-copy="source venv/bin/activate">Copy</button></div>
+        <div class="cmd"><code>pip install -r requirements.txt</code><span class="cmd-note">deps</span><button class="copy-btn" data-copy="pip install -r requirements.txt">Copy</button></div>
+      </div>
+
+      <div class="cheat-group">
+        <h3>WINDOWS FIREWALL</h3>
+        <div class="cmd"><code>netsh advfirewall firewall add rule name="SecureVault" dir=in action=allow protocol=TCP localport=8443</code><span class="cmd-note">allow inbound</span><button class="copy-btn" data-copy='netsh advfirewall firewall add rule name="SecureVault" dir=in action=allow protocol=TCP localport=8443'>Copy</button></div>
+      </div>
+
+      <div class="cheat-group">
+        <h3>LINUX FIREWALL (UFW)</h3>
+        <div class="cmd"><code>sudo ufw allow 8443/tcp</code><span class="cmd-note">allow inbound</span><button class="copy-btn" data-copy="sudo ufw allow 8443/tcp">Copy</button></div>
+        <div class="cmd"><code>sudo ufw status verbose</code><span class="cmd-note">check rules</span><button class="copy-btn" data-copy="sudo ufw status verbose">Copy</button></div>
+      </div>
+
+      <div class="cheat-group">
+        <h3>SYSTEMD SERVICE</h3>
+        <div class="cmd"><code>sudo systemctl enable --now securevault</code><span class="cmd-note">start + boot</span><button class="copy-btn" data-copy="sudo systemctl enable --now securevault">Copy</button></div>
+        <div class="cmd"><code>sudo journalctl -u securevault -f</code><span class="cmd-note">live logs</span><button class="copy-btn" data-copy="sudo journalctl -u securevault -f">Copy</button></div>
+      </div>
+
+      <div class="cheat-group">
+        <h3>TAILSCALE</h3>
+        <div class="cmd"><code>tailscale up</code><span class="cmd-note">connect</span><button class="copy-btn" data-copy="tailscale up">Copy</button></div>
+        <div class="cmd"><code>tailscale ip -4</code><span class="cmd-note">show 100.x.x.x</span><button class="copy-btn" data-copy="tailscale ip -4">Copy</button></div>
+        <div class="cmd"><code>tailscale status</code><span class="cmd-note">peer list</span><button class="copy-btn" data-copy="tailscale status">Copy</button></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>SecureVault / HomeServer &mdash; System Blueprint</span>
+    <span>No external dependencies &middot; renders offline</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab-btn');
+  var panels = {
+    overview: document.getElementById('panel-overview'),
+    scale: document.getElementById('panel-scale'),
+    cheat: document.getElementById('panel-cheat')
+  };
+
+  function activate(name){
+    tabs.forEach(function(btn){
+      var isActive = btn.getAttribute('data-tab') === name;
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    Object.keys(panels).forEach(function(key){
+      var panel = panels[key];
+      if(key === name){
+        panel.hidden = false;
+        panel.classList.add('active');
+      } else {
+        panel.hidden = true;
+        panel.classList.remove('active');
+      }
+    });
+  }
+
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      activate(btn.getAttribute('data-tab'));
+    });
+  });
+
+  var copyButtons = document.querySelectorAll('.copy-btn');
+  copyButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var text = btn.getAttribute('data-copy');
+      var done = function(){
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function(){
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1400);
+      };
+      if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          fallbackCopy(text, done);
+        });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  });
+
+  function fallbackCopy(text, cb){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    cb();
+  }
+})();
+</script>
+</body>
+</html>
